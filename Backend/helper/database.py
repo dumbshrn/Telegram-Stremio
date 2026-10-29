@@ -1,5 +1,6 @@
 import re
 import secrets
+import ssl as _ssl
 import string
 import time
 from asyncio import create_task, gather
@@ -19,6 +20,14 @@ from Backend.helper.settings_manager import SettingsManager
 from Backend.helper.task_manager import delete_message
 from Backend.logger import LOGGER
 
+
+def _make_motor_client(uri: str):
+    ctx = _ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = _ssl.CERT_NONE
+    return motor.motor_asyncio.AsyncIOMotorClient(
+        uri, tls=True, tlsAllowInvalidCertificates=True, ssl_context=ctx
+    )
 
 
 def convert_objectid_to_str(document: Dict[str, Any]) -> Dict[str, Any]:
@@ -53,7 +62,7 @@ class Database:
     async def connect(self):
         try:
             for index, uri in enumerate(self.db_uris):
-                client = motor.motor_asyncio.AsyncIOMotorClient(uri)
+                client = _make_motor_client(uri)
                 db_key = "tracking" if index == 0 else f"storage_{index}"
                 self.clients[db_key] = client
                 self.dbs[db_key] = client[self.db_name]
@@ -61,7 +70,7 @@ class Database:
 
                 masked_uri = re.sub(r"://(.*?):.*?@", r"://\1:*****@", uri)
                 masked_uri = masked_uri.split('?')[0]
-                
+
                 LOGGER.info(f"{db_type} Database connected successfully: {masked_uri}")
 
             state = await self.dbs["tracking"]["state"].find_one({"_id": "db_index"})
@@ -154,7 +163,6 @@ class Database:
             upsert=True
         )
 
-
     async def get_settings(self) -> dict:
         try:
             doc = await self.dbs["tracking"]["settings"].find_one({"_id": "app_settings"})
@@ -188,11 +196,9 @@ class Database:
         )
         return True
 
-
-
     async def connect_storage_db(self, uri: str, index: int) -> bool:
         try:
-            client = motor.motor_asyncio.AsyncIOMotorClient(uri)
+            client = _make_motor_client(uri)
             await client.admin.command("ping")
 
             db_key = "tracking" if index == 0 else f"storage_{index}"
@@ -332,7 +338,7 @@ class Database:
             return None
 
         duration = user["pending_payment"]["duration"]
-        
+
         #----- Calculate new expiry
         current_expiry = user.get("subscription_expiry")
         now = datetime.utcnow()
@@ -379,9 +385,9 @@ class Database:
             "subscription_status": "active"
         })
         return await cursor.to_list(None)
-        
+
     async def mark_reminder_sent(self, user_id: int):
-         await self.dbs["tracking"]["users"].update_one(
+        await self.dbs["tracking"]["users"].update_one(
             {"_id": user_id},
             {"$set": {"reminder_sent": True}}
         )
