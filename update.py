@@ -42,7 +42,7 @@ def _fetch_upstream_from_db() -> tuple[str | None, str]:
             return None, "master"
 
         tracking_uri = uris[0]
-        client = MongoClient(tracking_uri, serverSelectionTimeoutMS=5000)
+        client = MongoClient(tracking_uri, serverSelectionTimeoutMS=5000, tls=True, tlsAllowInvalidCertificates=True)
         doc = client["dbFyvio"]["settings"].find_one({"_id": "app_settings"})
         client.close()
 
