@@ -29,7 +29,7 @@ async def _drain_refresh_queue(client: Client) -> None:
         _pending_channels.difference_update(channels)
         result = await scan_manager.start(client, channels, mode="rescan")
         if result.get("ok"):
-            LOGGER.info("[CVFetch] Started normal scan for %s", ", ".join(channels))
+            LOGGER.info("[CVFetch] Started full re-index for %s", ", ".join(channels))
             continue
 
         if "already running" in str(result.get("message", "")).lower():
