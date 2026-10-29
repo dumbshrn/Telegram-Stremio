@@ -1,6 +1,5 @@
 import re
 import secrets
-import ssl as _ssl
 import string
 import time
 from asyncio import create_task, gather
@@ -22,13 +21,11 @@ from Backend.logger import LOGGER
 
 
 def _make_motor_client(uri: str):
-    ctx = _ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = _ssl.CERT_NONE
     return motor.motor_asyncio.AsyncIOMotorClient(
-        uri, tls=True, tlsAllowInvalidCertificates=True, ssl_context=ctx
+        uri,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
     )
-
 
 def convert_objectid_to_str(document: Dict[str, Any]) -> Dict[str, Any]:
     for key, value in document.items():
