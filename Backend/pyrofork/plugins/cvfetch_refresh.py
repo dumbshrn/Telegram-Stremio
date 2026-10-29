@@ -1,4 +1,4 @@
-"""Handle CVFetch refresh markers and start a normal incremental channel scan."""
+"""Handle CVFetch refresh markers and start a full channel re-index."""
 
 import asyncio
 
@@ -27,7 +27,7 @@ async def _drain_refresh_queue(client: Client) -> None:
 
         channels = sorted(_pending_channels)
         _pending_channels.difference_update(channels)
-        result = await scan_manager.start(client, channels, mode="scan")
+        result = await scan_manager.start(client, channels, mode="rescan")
         if result.get("ok"):
             LOGGER.info("[CVFetch] Started normal scan for %s", ", ".join(channels))
             continue
